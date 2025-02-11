@@ -1,0 +1,25 @@
+name: CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Login to AWS
+        run: echo "${{ secrets.AWS_ACCESS_KEY_ID }}" && echo "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+
+      - name: Build Docker image
+        run: docker build -t fastapi-app .
+
+      - name: Push Docker image to AWS ECR (if using ECR)
+        run: |
+          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin http://54.196.173.22
+          docker tag fastapi-app http://54.196.173.22:latest
+          docker push http://54.196.173.22:latest
