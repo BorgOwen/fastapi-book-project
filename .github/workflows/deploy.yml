@@ -1,4 +1,4 @@
-name: Deploy FastAPI App
+name: CD Pipeline
 
 on:
   push:
@@ -8,18 +8,18 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up SSH
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.DEPLOY_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H http://54.234.47.44 >> ~/.ssh/known_hosts
+      - name: Login to AWS
+        run: echo "${{ secrets.AWS_ACCESS_KEY_ID }}" && echo "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
 
-      - name: Deploy App
+      - name: Build Docker image
+        run: docker build -t fastapi-app .
+
+      - name: Push Docker image to AWS ECR (if using ECR)
         run: |
-          ssh ubuntu@http://54.234.47.44 "cd /home/ubuntu/fastapi-book-project && git pull origin main && docker build -t fastapi-app . && docker run -d -p 8000:8000 fastapi-app"
+          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin http://54.234.47.44
+          docker tag fastapi-app <your-ecr-url>:latest
+          docker push http://54.234.47.44:latest
