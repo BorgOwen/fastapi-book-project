@@ -1,30 +1,19 @@
-name: CD Pipeline
+name: Deployment Pipeline
 
 on:
   push:
     branches:
-      - main
+      - main  # Runs when changes are merged into the main branch
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.9"
-
-      - name: Install dependencies
+      - name: Deploy Application
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: Build Docker image
-        run: docker build -t fastapi-app .
-
-      - name: Deploy to server
-        run: |
-          docker-compose up -d
+          echo "Deploying application..."
+          # Add your deployment script/commands here
