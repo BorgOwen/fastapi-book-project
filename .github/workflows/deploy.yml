@@ -58,3 +58,5 @@ jobs:
 
             # Restart Nginx
             sudo systemctl restart nginx
+            
+            # end
