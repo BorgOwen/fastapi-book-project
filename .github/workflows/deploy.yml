@@ -32,3 +32,5 @@ jobs:
 
       - name: Push Docker image to AWS ECR
         run: docker push 686255989831.dkr.ecr.us-east-1.amazonaws.com/fastapi-app:latest
+
+        
