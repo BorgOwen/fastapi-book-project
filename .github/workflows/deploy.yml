@@ -12,14 +12,23 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Login to AWS
-        run: echo "${{ secrets.AWS_ACCESS_KEY_ID }}" && echo "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+      # ✅ Use the official AWS credentials action
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Login to AWS ECR
+        run: |
+          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 686255989831.dkr.ecr.us-east-1.amazonaws.com/fastapi-app
 
       - name: Build Docker image
         run: docker build -t fastapi-app .
 
-      # - name: Push Docker image to AWS ECR (if using ECR)
-      #   run: |
-      #     aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin http://54.234.47.44
-      #     docker tag fastapi-app <your-ecr-url>:latest
-      #     docker push http://54.234.47.44:latest
+      - name: Tag Docker image for ECR
+        run: docker tag fastapi-app 686255989831.dkr.ecr.us-east-1.amazonaws.com/fastapi-app:latest
+
+      - name: Push Docker image to AWS ECR
+        run: docker push 686255989831.dkr.ecr.us-east-1.amazonaws.com/fastapi-app:latest
