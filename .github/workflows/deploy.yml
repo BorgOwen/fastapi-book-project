@@ -35,8 +35,8 @@ jobs:
           docker tag fastapi-app ${{ secrets.ECR_REGISTRY }}/fastapi-app:latest
           docker push ${{ secrets.ECR_REGISTRY }}/fastapi-app:latest
 
-      # ✅ Deploy to AWS EC2 - Step 1: Pull latest code & reboot EC2
-      - name: Deploy to EC2 - Part 1 (Git Pull & Reboot)
+      # ✅ Deploy to AWS EC2 - Step 1: Pull latest code & prepare for reboot
+      - name: Deploy to EC2 - Part 1 (Git Pull & Prepare)
         uses: appleboy/ssh-action@v0.1.10
         with:
           host: ${{ secrets.EC2_PUBLIC_IP }}
@@ -56,15 +56,22 @@ jobs:
             # Restart Docker service (optional step before reboot)
             sudo systemctl restart docker
 
-            # Reboot EC2 instance
+      # ✅ Reboot EC2 (Separate Step)
+      - name: Reboot EC2
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.EC2_PUBLIC_IP }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
             echo "Rebooting EC2 instance now..."
-            sudo reboot
+            sudo nohup reboot &  # Run reboot in background to prevent SSH disconnect failure
 
       # ✅ Wait for EC2 to Restart Before Reconnecting
       - name: Wait for EC2 to Restart
         run: |
           echo "Waiting for EC2 to restart..."
-          sleep 60  # Wait for 1 minute
+          sleep 90  # Wait for 90 seconds (increase if needed)
           while ! nc -z ${{ secrets.EC2_PUBLIC_IP }} 22; do
             echo "EC2 still rebooting... waiting 10 more seconds"
             sleep 10
