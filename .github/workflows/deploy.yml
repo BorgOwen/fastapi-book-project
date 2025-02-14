@@ -60,9 +60,16 @@ jobs:
             echo "Rebooting EC2 instance now..."
             sudo reboot
 
-      # ✅ Wait for EC2 to Restart
+      # ✅ Wait for EC2 to Restart Before Reconnecting
       - name: Wait for EC2 to Restart
-        run: sleep 10  # Adjust if needed
+        run: |
+          echo "Waiting for EC2 to restart..."
+          sleep 60  # Wait for 1 minute
+          while ! nc -z ${{ secrets.EC2_PUBLIC_IP }} 22; do
+            echo "EC2 still rebooting... waiting 10 more seconds"
+            sleep 10
+          done
+          echo "EC2 is back online!"
 
       # ✅ Deploy to AWS EC2 - Step 2: Restart FastAPI App
       - name: Deploy to EC2 - Part 2 (Restart FastAPI)
