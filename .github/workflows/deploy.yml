@@ -58,7 +58,7 @@ jobs:
 
             # aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
             
-            # ✅ Reboot EC2 instance
+            # Reboot EC2 instance
             echo "Rebooting EC2 instance now..."
             sudo reboot
 
