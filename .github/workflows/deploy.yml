@@ -40,8 +40,7 @@ jobs:
           script: |
             cd /home/ubuntu/fastapi-book-project || exit
 
-            # Pull latest code
-            git reset --hard
+            # Pull latest code without resetting (prevents breaking changes)
             git pull origin main
 
             # Update docker-compose.yml with the correct ECR image
@@ -53,16 +52,13 @@ jobs:
             # Pull the latest FastAPI image
             docker-compose pull
 
-            # Stop and remove old containers
+            # Stop running containers (if any)
             docker-compose down
 
             # Clean up old Docker images
             docker system prune -af || true
 
-            # Ensure network exists
-            docker network create fastapi-book-project_default || true
-
-            # Start services with Docker Compose
-            docker-compose up -d --force-recreate --remove-orphans
+            # Restart Docker Compose to apply updates
+            docker-compose up -d --pull always --force-recreate --remove-orphans
 
             echo "Deployment Successful using Docker Compose! 🚀"

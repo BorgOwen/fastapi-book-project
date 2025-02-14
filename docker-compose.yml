@@ -2,19 +2,19 @@ version: "3.8"
 
 services:
   app:
-    image: fastapi-app:latest  # Use a placeholder image, updated in the deployment script
+    image: ${{ secrets.ECR_REGISTRY }}/fastapi-app:latest
     container_name: fastapi-app
-    restart: always
     ports:
       - "8000:8000"
+    restart: always  # Ensures container restarts if it crashes
 
   nginx:
     image: nginx:latest
     container_name: nginx
-    restart: always
     ports:
       - "80:80"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf
     depends_on:
       - app
+    restart: always  # Ensures Nginx restarts if it crashes
