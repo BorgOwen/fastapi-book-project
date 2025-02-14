@@ -40,11 +40,13 @@ jobs:
           script: |
             cd /home/ubuntu/fastapi-book-project || exit
 
-            # Pull latest code without resetting (prevents breaking changes)
+            # Stash any local changes before pulling
+            git stash --include-untracked
             git pull origin main
+            git stash pop || true
 
-            # Update docker-compose.yml with the correct ECR image
-            sed -i 's|image: fastapi-app|image: ${{ secrets.ECR_REGISTRY }}/fastapi-app:latest|g' docker-compose.yml
+            # Update the .env file instead of modifying docker-compose.yml
+            echo "FASTAPI_IMAGE=${{ secrets.ECR_REGISTRY }}/fastapi-app:latest" > .env
 
             # Login to AWS ECR
             aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
@@ -58,7 +60,7 @@ jobs:
             # Clean up old Docker images
             docker system prune -af || true
 
-            # Restart Docker Compose to apply updates
+            # Restart Docker Compose with the latest changes
             docker-compose up -d --pull always --force-recreate --remove-orphans
 
             echo "Deployment Successful using Docker Compose! 🚀"
