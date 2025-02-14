@@ -44,7 +44,7 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             # Login to AWS ECR
-            aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ***
+            aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
 
             # aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
 
@@ -57,14 +57,18 @@ jobs:
             docker rm fastapi-app || true
 
             # Check if port 8000 is in use and free it
-            if sudo lsof -i :8000; then
+            if lsof -i :8000; then
             echo "Port 8000 is in use. Stopping the process..."
-            sudo fuser -k 8000/tcp  # Kill any process using port 8000
+            fuser -k 8000/tcp  # Kill any process using port 8000
             fi
 
 
             # Run the new container
-            sudo docker run -d -p 8000:8000 --name fastapi-app ${{ secrets.ECR_REGISTRY }}/fastapi-app:latest
+            docker run -d -p 8000:8000 --name fastapi-app ${{ secrets.ECR_REGISTRY }}/fastapi-app:latest
+
+            # Reload systemd daemon to prevent Nginx warning
+            sudo systemctl daemon-reload
+
 
             # Restart Nginx
             sudo systemctl restart nginx
