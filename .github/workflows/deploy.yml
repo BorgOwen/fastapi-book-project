@@ -35,8 +35,8 @@ jobs:
           docker tag fastapi-app ${{ secrets.ECR_REGISTRY }}/fastapi-app:latest
           docker push ${{ secrets.ECR_REGISTRY }}/fastapi-app:latest
 
-      # ✅ Deploy to AWS EC2 - Step 1: Pull latest code & prepare for reboot
-      - name: Deploy to EC2 - Part 1 (Git Pull & Prepare)
+      # ✅ Deploy to AWS EC2
+      - name: Deploy to EC2 using Docker Compose
         uses: appleboy/ssh-action@v0.1.10
         with:
           host: ${{ secrets.EC2_PUBLIC_IP }}
@@ -46,89 +46,21 @@ jobs:
             # Navigate to project directory
             cd /home/ubuntu/fastapi-book-project || exit
 
-            # Pull latest code from GitHub
+            # Pull latest changes
             git reset --hard
             git pull origin main
 
             # Login to AWS ECR
             aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
 
-            # Restart Docker service (optional step before reboot)
-            sudo systemctl restart docker
+            # Pull the latest Docker image
+            sudo docker-compose pull
 
-      # ✅ Reboot EC2 (Separate Step)
-      - name: Reboot EC2
-        uses: appleboy/ssh-action@v0.1.10
-        with:
-          host: ${{ secrets.EC2_PUBLIC_IP }}
-          username: ubuntu
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            echo "Rebooting EC2 instance now..."
-            sudo nohup reboot &  # Run reboot in background to prevent SSH disconnect failure
-
-      # ✅ Wait for EC2 to Restart Before Reconnecting
-      - name: Wait for EC2 to Restart
-        run: |
-          echo "Waiting for EC2 to restart..."
-          sleep 90  # Wait for 90 seconds (increase if needed)
-          while ! nc -z ${{ secrets.EC2_PUBLIC_IP }} 22; do
-            echo "EC2 still rebooting... waiting 10 more seconds"
-            sleep 10
-          done
-          echo "EC2 is back online!"
-
-      # ✅ Deploy to AWS EC2 - Step 2: Restart FastAPI App
-      - name: Deploy to EC2 - Part 2 (Restart FastAPI)
-        uses: appleboy/ssh-action@v0.1.10
-        with:
-          host: ${{ secrets.EC2_PUBLIC_IP }}
-          username: ubuntu
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            # Wait for EC2 services to start
-            sleep 10
-
-            # Login to AWS ECR again after reboot
-            aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
-
-            # Pull the latest image
-            sudo docker pull ${{ secrets.ECR_REGISTRY }}/fastapi-app:latest
-
-            # Run the new container with a unique name
-            NEW_CONTAINER_NAME="fastapi-app-$(date +%s)"
-            echo "Running new container: $NEW_CONTAINER_NAME"
-            sudo docker run -d --restart=always -p 8000:8000 --name $NEW_CONTAINER_NAME ${{ secrets.ECR_REGISTRY }}/fastapi-app:latest
-
-            # Remove old containers (keep only the latest one)
-            sudo docker ps -aq | tail -n +2 | xargs -r sudo docker rm -f
-
-            # # Stop and remove any old containers
-            # sudo docker ps -q --filter "name=fastapi-app" | xargs -r sudo docker stop
-            # sudo docker ps -aq --filter "name=fastapi-app" | xargs -r sudo docker rm -f
-
-            # # Stop and remove the old container (forcefully)
-            # echo "Stopping old container..."
-            # sudo docker stop fastapi-app || true
-            # echo "Removing old container..."
-            # sudo docker rm -f fastapi-app || true
-            
-            # Clean up old Docker images
-            sudo docker system prune -f
-
-            # Check if port 8000 is in use and free it
-            if lsof -i :8000; then
-              echo "Port 8000 is in use. Stopping the process..."
-              fuser -k 8000/tcp  # Kill any process using port 8000
-            fi
-
-            # Run the new container
-            sudo docker run -d --restart=always -p 8000:8000 --name fastapi-app ${{ secrets.ECR_REGISTRY }}/fastapi-app:latest
-
-            # Reload systemd daemon to prevent Nginx warning
-            sudo systemctl daemon-reload
+            # Restart the container using docker-compose
+            sudo docker-compose down
+            sudo docker-compose up -d
 
             # Restart Nginx
             sudo systemctl restart nginx
 
-            echo "Deployment Successful Tolu! 🚀"
+            echo "Deployment Successful using Docker Compose! 🚀"
