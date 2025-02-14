@@ -20,9 +20,5 @@ app.include_router(api_router, prefix=settings.API_PREFIX)
 @app.get("/healthcheck")
 async def health_check():
     """Checks if server is active."""
-    return {"status": "very active"}
+    return {"status": "active"}
 
-@app.get("/stage2")
-async def stage2():
-    """Grants access to level 2"""
-    return {"message": "Welcome to stage 2X"}
