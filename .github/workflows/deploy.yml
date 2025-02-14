@@ -95,15 +95,23 @@ jobs:
             # Pull the latest image
             sudo docker pull ${{ secrets.ECR_REGISTRY }}/fastapi-app:latest
 
+            # Run the new container with a unique name
+            NEW_CONTAINER_NAME="fastapi-app-$(date +%s)"
+            echo "Running new container: $NEW_CONTAINER_NAME"
+            sudo docker run -d --restart=always -p 8000:8000 --name $NEW_CONTAINER_NAME ${{ secrets.ECR_REGISTRY }}/fastapi-app:latest
+
+            # Remove old containers (keep only the latest one)
+            sudo docker ps -aq | tail -n +2 | xargs -r sudo docker rm -f
+
             # # Stop and remove any old containers
             # sudo docker ps -q --filter "name=fastapi-app" | xargs -r sudo docker stop
             # sudo docker ps -aq --filter "name=fastapi-app" | xargs -r sudo docker rm -f
 
-            # Stop and remove the old container (forcefully)
-            echo "Stopping old container..."
-            sudo docker stop fastapi-app || true
-            echo "Removing old container..."
-            sudo docker rm -f fastapi-app || true
+            # # Stop and remove the old container (forcefully)
+            # echo "Stopping old container..."
+            # sudo docker stop fastapi-app || true
+            # echo "Removing old container..."
+            # sudo docker rm -f fastapi-app || true
             
             # Clean up old Docker images
             sudo docker system prune -f
