@@ -35,45 +35,54 @@ jobs:
           docker tag fastapi-app ${{ secrets.ECR_REGISTRY }}/fastapi-app:latest
           docker push ${{ secrets.ECR_REGISTRY }}/fastapi-app:latest
 
-      # ✅ Deploy to AWS EC2
-      - name: Deploy to EC2
+      # ✅ Deploy to AWS EC2 - Step 1: Pull latest code & reboot EC2
+      - name: Deploy to EC2 - Part 1 (Git Pull & Reboot)
         uses: appleboy/ssh-action@v0.1.10
         with:
           host: ${{ secrets.EC2_PUBLIC_IP }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            #Navigate to project directory
+            # Navigate to project directory
             cd /home/ubuntu/fastapi-book-project || exit
 
-            # Pull latest code from Github
+            # Pull latest code from GitHub
             git reset --hard
             git pull origin main
-
-             # Restart Docker service to avoid rebooting the entire EC2 instance
-            sudo systemctl restart docker
 
             # Login to AWS ECR
             aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
 
-            # aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
-            
+            # Restart Docker service (optional step before reboot)
+            sudo systemctl restart docker
+
             # Reboot EC2 instance
             echo "Rebooting EC2 instance now..."
             sudo reboot
 
+      # ✅ Wait for EC2 to Restart
+      - name: Wait for EC2 to Restart
+        run: sleep 10  # Adjust if needed
+
+      # ✅ Deploy to AWS EC2 - Step 2: Restart FastAPI App
+      - name: Deploy to EC2 - Part 2 (Restart FastAPI)
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.EC2_PUBLIC_IP }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            # Wait for EC2 services to start
+            sleep 10
+
+            # Login to AWS ECR again after reboot
+            aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
+
             # Pull the latest image
             sudo docker pull ${{ secrets.ECR_REGISTRY }}/fastapi-app:latest
 
-            # Stop and remove the old container
-          
-            sudo docker stop fastapi-app || true
-            sudo docker rm fastapi-app || true
-
-            # Find and force stop the running container
+            # Stop and remove any old containers
             sudo docker ps -q --filter "name=fastapi-app" | xargs -r sudo docker stop
-
-            # Force remove the container (ignores errors)
             sudo docker ps -aq --filter "name=fastapi-app" | xargs -r sudo docker rm -f
 
             # Clean up old Docker images
@@ -81,8 +90,8 @@ jobs:
 
             # Check if port 8000 is in use and free it
             if lsof -i :8000; then
-            echo "Port 8000 is in use. Stopping the process..."
-            fuser -k 8000/tcp  # Kill any process using port 8000
+              echo "Port 8000 is in use. Stopping the process..."
+              fuser -k 8000/tcp  # Kill any process using port 8000
             fi
 
             # Run the new container
@@ -94,6 +103,4 @@ jobs:
             # Restart Nginx
             sudo systemctl restart nginx
 
-            echo "Deployment Successful!"
-
-
+            echo "Deployment Successful! 🚀"
