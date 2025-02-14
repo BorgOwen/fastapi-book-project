@@ -26,3 +26,7 @@ async def health_check():
 async def stage2():
     """Grants access to level 2"""
     return {"message": "Welcome to stage 2X"}
+
+@app.get("/stage2")
+async def stage2():
+    return {"message": "welcome to stage 2"}
