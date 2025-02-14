@@ -1,14 +1,17 @@
 version: "3.8"
+
 services:
   app:
-    image: fastapi-app
+    image: ${{ secrets.ECR_REGISTRY }}/fastapi-app:latest  # Use the latest image from AWS ECR
     container_name: fastapi-app
+    restart: always  # Ensures the container restarts if it crashes
     ports:
       - "8000:8000"
 
   nginx:
     image: nginx:latest
     container_name: nginx
+    restart: always
     ports:
       - "80:80"
     volumes:
