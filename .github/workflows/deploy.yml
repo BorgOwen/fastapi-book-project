@@ -56,15 +56,15 @@ jobs:
             # aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
 
             # Pull the latest image
-            docker pull ${{ secrets.ECR_REGISTRY }}/fastapi-app:latest
+            sudo docker pull ${{ secrets.ECR_REGISTRY }}/fastapi-app:latest
 
             # Stop and remove the old container
           
-            docker stop fastapi-app || true
-            docker rm fastapi-app || true
+            sudo docker stop fastapi-app || true
+            sudo docker rm fastapi-app || true
 
             # Clean up old Docker images
-            docker system prune -f
+            sudo docker system prune -f
 
             # Check if port 8000 is in use and free it
             if lsof -i :8000; then
@@ -73,7 +73,7 @@ jobs:
             fi
 
             # Run the new container
-            docker run -d --restart=always -p 8000:8000 --name fastapi-app ${{ secrets.ECR_REGISTRY }}/fastapi-app:latest
+            sudo docker run -d --restart=always -p 8000:8000 --name fastapi-app ${{ secrets.ECR_REGISTRY }}/fastapi-app:latest
 
             # Reload systemd daemon to prevent Nginx warning
             sudo systemctl daemon-reload
