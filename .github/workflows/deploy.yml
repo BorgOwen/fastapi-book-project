@@ -45,7 +45,7 @@ jobs:
             git pull origin main
 
             # Update docker-compose.yml with the correct ECR image
-            sed -i 's|fastapi-app:latest|${{ secrets.ECR_REGISTRY }}/fastapi-app:latest|g' docker-compose.yml
+            sed -i 's|image: fastapi-app|image: ${{ secrets.ECR_REGISTRY }}/fastapi-app:latest|g' docker-compose.yml
 
             # Login to AWS ECR
             aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
@@ -57,9 +57,12 @@ jobs:
             docker-compose down
 
             # Clean up old Docker images
-            docker system prune -f
+            docker system prune -af || true
+
+            # Ensure network exists
+            docker network create fastapi-book-project_default || true
 
             # Start services with Docker Compose
-            docker-compose up -d
+            docker-compose up -d --force-recreate --remove-orphans
 
             echo "Deployment Successful using Docker Compose! 🚀"
