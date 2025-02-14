@@ -43,6 +43,13 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
+            #Navigate to project directory
+            cd /home/ubuntu/fastapi-book-project
+
+            #Pull latest code from Github
+            git reset --hard
+            git pull origin main
+
             # Login to AWS ECR
             aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
 
