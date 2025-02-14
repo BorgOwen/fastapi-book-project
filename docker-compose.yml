@@ -2,9 +2,9 @@ version: "3.8"
 
 services:
   app:
-    image: ${{ secrets.ECR_REGISTRY }}/fastapi-app:latest  # Use the latest image from AWS ECR
+    image: fastapi-app:latest  # Use a placeholder image, updated in the deployment script
     container_name: fastapi-app
-    restart: always  # Ensures the container restarts if it crashes
+    restart: always
     ports:
       - "8000:8000"
 

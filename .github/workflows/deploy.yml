@@ -12,7 +12,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # ✅ Configure AWS credentials
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -20,22 +19,18 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
-      # ✅ Login to AWS ECR
       - name: Login to AWS ECR
         run: |
           aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
 
-      # ✅ Build Docker image
       - name: Build Docker image
         run: docker build -t fastapi-app .
 
-      # ✅ Tag and push image to AWS ECR
-      - name: Push Docker image to AWS ECR
+      - name: Tag and Push Docker image
         run: |
           docker tag fastapi-app ${{ secrets.ECR_REGISTRY }}/fastapi-app:latest
           docker push ${{ secrets.ECR_REGISTRY }}/fastapi-app:latest
 
-      # ✅ Deploy to AWS EC2
       - name: Deploy to EC2 using Docker Compose
         uses: appleboy/ssh-action@v0.1.10
         with:
@@ -43,24 +38,28 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            # Navigate to project directory
             cd /home/ubuntu/fastapi-book-project || exit
 
-            # Pull latest changes
+            # Pull latest code
             git reset --hard
             git pull origin main
+
+            # Update docker-compose.yml with the correct ECR image
+            sed -i 's|fastapi-app:latest|${{ secrets.ECR_REGISTRY }}/fastapi-app:latest|g' docker-compose.yml
 
             # Login to AWS ECR
             aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
 
-            # Pull the latest Docker image
-            sudo docker-compose pull
+            # Pull the latest FastAPI image
+            docker-compose pull
 
-            # Restart the container using docker-compose
-            sudo docker-compose down
-            sudo docker-compose up -d
+            # Stop and remove old containers
+            docker-compose down
 
-            # Restart Nginx
-            sudo systemctl restart nginx
+            # Clean up old Docker images
+            docker system prune -f
+
+            # Start services with Docker Compose
+            docker-compose up -d
 
             echo "Deployment Successful using Docker Compose! 🚀"
