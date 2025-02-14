@@ -50,6 +50,9 @@ jobs:
             git reset --hard
             git pull origin main
 
+             # Restart Docker service to avoid rebooting the entire EC2 instance
+            sudo systemctl restart docker
+
             # Login to AWS ECR
             aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
 
