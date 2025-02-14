@@ -73,7 +73,7 @@ jobs:
             fi
 
             # Run the new container
-            docker run -d -p 8000:8000 --name fastapi-app ${{ secrets.ECR_REGISTRY }}/fastapi-app:latest
+            docker run -d --restart=always -p 8000:8000 --name fastapi-app ${{ secrets.ECR_REGISTRY }}/fastapi-app:latest
 
             # Reload systemd daemon to prevent Nginx warning
             sudo systemctl daemon-reload
