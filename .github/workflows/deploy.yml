@@ -46,7 +46,7 @@ jobs:
             #Navigate to project directory
             cd /home/ubuntu/fastapi-book-project
 
-            #Pull latest code from Github
+            # Pull latest code from Github
             git reset --hard
             git pull origin main
 
