@@ -71,6 +71,6 @@ jobs:
             # Restart Nginx
             sudo systemctl restart nginx
 
-            echo "Deployment Successful!"
+            echo "Deployment Successful! o"
 
 
