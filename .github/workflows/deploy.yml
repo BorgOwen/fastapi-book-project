@@ -60,4 +60,6 @@ jobs:
             # Restart Nginx
             sudo systemctl restart nginx
 
+            Echo Deployment Successful!
+
 
