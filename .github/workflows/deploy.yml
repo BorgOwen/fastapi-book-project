@@ -44,7 +44,7 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             #Navigate to project directory
-            cd /home/ubuntu/fastapi-book-project
+            cd /home/ubuntu/fastapi-book-project || exit
 
             # Pull latest code from Github
             git reset --hard
@@ -63,6 +63,9 @@ jobs:
             docker stop fastapi-app || true
             docker rm fastapi-app || true
 
+            # Clean up old Docker images
+            docker system prune -f
+
             # Check if port 8000 is in use and free it
             if lsof -i :8000; then
             echo "Port 8000 is in use. Stopping the process..."
@@ -78,6 +81,6 @@ jobs:
             # Restart Nginx
             sudo systemctl restart nginx
 
-            echo "Deployment Successful! o"
+            echo "Deployment Successful!"
 
 
